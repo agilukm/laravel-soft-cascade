@@ -67,7 +67,6 @@ class SoftCascade implements SoftCascadeable
             if (!$this->isCascadable($model)) {
                 return;
             }
-
             if (!in_array($model->getConnectionName(), $this->dbsToTransact)) {
                 $this->dbsToTransact[] = $model->getConnectionName();
                 DB::connection($model->getConnectionName())->beginTransaction();
@@ -89,7 +88,6 @@ class SoftCascade implements SoftCascadeable
     protected function relations($model, $foreignKeyIds)
     {
         $relations = $model->getSoftCascade();
-
         if (empty($relations)) {
             return;
         }
@@ -99,7 +97,6 @@ class SoftCascade implements SoftCascadeable
             $this->validateRelation($model, $relation);
 
             $modelRelation = $model->$relation();
-
             /**
              * Maintains compatibility fot get foreign key name on laravel old and new methods.
              *
@@ -111,7 +108,6 @@ class SoftCascade implements SoftCascadeable
             //Get foreign key and foreign key ids
             $foreignKeyUse = $modelRelation->{$fnUseGetForeignKey}();
             $foreignKeyIdsUse = $foreignKeyIds;
-
             //Many to many relations need to get related ids and related local key
             if ($modelRelation instanceof BelongsToMany) {
                 extract($this->getBelongsToManyData($modelRelation, $foreignKeyUse, $foreignKeyIds));
@@ -199,7 +195,7 @@ class SoftCascade implements SoftCascadeable
         $relationModel = $relation->getQuery()->getModel();
         $relationModel = new $relationModel();
         if ($affectedRows > 0) {
-            $relationModel = $relationModel->withTrashed()->whereIn($foreignKey, $foreignKeyIds)->limit($affectedRows);
+            $relationModel = $relationModel->withoutGlobalScopes()->withTrashed()->whereIn($foreignKey, $foreignKeyIds)->limit($affectedRows);
             $this->run($relationModel->get([$relationModel->getModel()->getKeyName()]));
             $relationModel->{$this->direction}($this->directionData);
         }
@@ -252,8 +248,7 @@ class SoftCascade implements SoftCascadeable
     {
         $relationModel = $relation->getQuery()->getModel();
         $relationModel = new $relationModel();
-
-        return $relationModel->withTrashed()->whereIn($foreignKey, $foreignKeyIds)->count();
+        return $relationModel->withoutGlobalScopes()->withTrashed()->whereIn($foreignKey, $foreignKeyIds)->count();
     }
 
     /**
